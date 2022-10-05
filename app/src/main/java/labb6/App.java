@@ -18,22 +18,16 @@ public class App {
         // } else {
         try {
             User newUser = new User();
-            InetAddress group = InetAddress.getByName("239.0.0.0");
-            int port = Integer.parseInt("1234");
-            NetworkInterface netIf = NetworkInterface.getByName("bge0");
-
             Scanner sc = new Scanner(System.in);
             System.out.println("Enter name: ");
             newUser.setName(sc.nextLine());
 
-            MulticastSocket socket = new MulticastSocket(port);
+            InetAddress group = InetAddress.getByName("239.0.0.0");
+            int port = Integer.parseInt("1234");
+            NetworkInterface netIf = NetworkInterface.getByName("bge0");
 
-            socket.setTimeToLive(0);
-            // Set to 1 for subnet
-
-            socket.joinGroup(new InetSocketAddress(group, 0), netIf);
-            Thread thread = new Thread(new ReadThread(socket, group, port, newUser));
-            thread.start();
+            MulticastSocket socket = startMulticast(group, port, netIf);
+            startThread(newUser, group, port, socket);
 
             System.out.println("Type messages: \n");
             while (true) {
@@ -68,6 +62,20 @@ public class App {
             ioe.printStackTrace();
         }
         // }
+    }
+
+    protected static MulticastSocket startMulticast(InetAddress group, int port, NetworkInterface netIf)
+            throws IOException {
+        MulticastSocket socket = new MulticastSocket(port);
+        socket.setTimeToLive(0);
+        // Set to 1 for subnet
+        socket.joinGroup(new InetSocketAddress(group, 0), netIf);
+        return socket;
+    }
+
+    private static void startThread(User newUser, InetAddress group, int port, MulticastSocket socket) {
+        Thread thread = new Thread(new ReadThread(socket, group, port, newUser));
+        thread.start();
     }
 
     private static void packetSender(InetAddress group, int port, MulticastSocket socket, String message)
